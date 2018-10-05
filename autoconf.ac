@@ -1,0 +1,10 @@
+AC_INIT(stopwatch, [0.1.0],[tsureshkumar2000@gmail.com])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AC_CHECK_HEADERS(curses.h,,,)
+AC_CHECK_LIB(ncurses)
+AC_PROG_CXX
+AC_CONFIG_FILES([
+    Makefile
+])
+AC_OUTPUT
+
