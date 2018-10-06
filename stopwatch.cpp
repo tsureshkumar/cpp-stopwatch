@@ -24,7 +24,13 @@ atomic<int> stopWatchStatus(STOPWATCH_RUNNING);
 
 struct Lap {
     millitime<millis> start,fin;
-    Lap(millitime<millis> st):start(st) {}
+    atomic<long> counter; // milliseconds past start
+    Lap(millitime<millis> st):start(st), counter(0) {}
+    Lap(const Lap &other) {
+        start = other.start;
+        fin = other.fin;
+        counter.store(other.counter);
+    }
 };
 atomic<int> lap(0); // current lap
 atomic<int> page(0); // paging if it goes beyond current screen
@@ -85,8 +91,8 @@ class TimerWindow {
              void drawPage() {
                  werase(w);
                  for(int i=page*watchesPerPage(); i < laps.size() && i < (page+1)*watchesPerPage(); i++) {
-                     Lap data = laps[i];
-                     long ms = (data.fin - data.start).count();
+                     Lap &data = laps[i];
+                     long ms = data.counter;
                      int seconds = ms/1000000;
                      int mins = seconds/60;
                      int hours = mins/60;
@@ -134,20 +140,21 @@ void recalculateSizes() {
 void stopwatch() {
     //time_t start = time(0);
     laps.emplace_back(chrono::time_point_cast<millis>(sclock::now()));
+    const int mills = 100;
     while(stopWatchStatus != STOPWATCH_STOPPED) {
         if (stopWatchStatus == STOPWATCH_RUNNING) {
             //long seconds = difftime(time(0), start);
             auto start = laps[lap].start;
-            auto now = chrono::system_clock::now();
-            long ms = (now - start).count();
-            int seconds = ms/1000000;
+            laps[lap].counter += mills;
+            long ms = laps[lap].counter;
+            int seconds = ms/1000;
             int mins = seconds/60;
             int hours = mins/60;
             if(ui) {
                 ui->timerw()->drawTime(hours, mins%60, seconds%60, ms%1000);
             }
         }
-        this_thread::sleep_for(std::chrono::milliseconds(100));
+        this_thread::sleep_for(std::chrono::milliseconds(mills));
     }
 } 
 
