@@ -102,9 +102,11 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_stopwatch_OBJECTS = stopwatch.$(OBJEXT)
+am_stopwatch_OBJECTS = stopwatch-stopwatch.$(OBJEXT)
 stopwatch_OBJECTS = $(am_stopwatch_OBJECTS)
 stopwatch_DEPENDENCIES =
+stopwatch_LINK = $(CXXLD) $(stopwatch_CXXFLAGS) $(CXXFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -120,8 +122,12 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/stopwatch.Po
+am__depfiles_remade = ./$(DEPDIR)/stopwatch-stopwatch.Po
 am__mv = mv -f
+AM_V_lt = $(am__v_lt_@AM_V@)
+am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
+am__v_lt_0 = --silent
+am__v_lt_1 = 
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 AM_V_CXX = $(am__v_CXX_@AM_V@)
@@ -277,6 +283,9 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 stopwatch_SOURCES = stopwatch.cpp
 stopwatch_LDADD = $(CURSES_LIB)
+stopwatch_CFLAGS = -Wc++11-extensions -std=c++17
+stopwatch_CPPFLAGS = -Wc++11-extensions -std=c++17
+stopwatch_CXXFLAGS = -Wc++11-extensions -std=c++17
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -375,7 +384,7 @@ clean-binPROGRAMS:
 
 stopwatch$(EXEEXT): $(stopwatch_OBJECTS) $(stopwatch_DEPENDENCIES) $(EXTRA_stopwatch_DEPENDENCIES) 
 	@rm -f stopwatch$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(stopwatch_OBJECTS) $(stopwatch_LDADD) $(LIBS)
+	$(AM_V_CXXLD)$(stopwatch_LINK) $(stopwatch_OBJECTS) $(stopwatch_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -383,7 +392,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stopwatch.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stopwatch-stopwatch.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -404,6 +413,20 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+stopwatch-stopwatch.o: stopwatch.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stopwatch_CPPFLAGS) $(CPPFLAGS) $(stopwatch_CXXFLAGS) $(CXXFLAGS) -MT stopwatch-stopwatch.o -MD -MP -MF $(DEPDIR)/stopwatch-stopwatch.Tpo -c -o stopwatch-stopwatch.o `test -f 'stopwatch.cpp' || echo '$(srcdir)/'`stopwatch.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/stopwatch-stopwatch.Tpo $(DEPDIR)/stopwatch-stopwatch.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='stopwatch.cpp' object='stopwatch-stopwatch.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stopwatch_CPPFLAGS) $(CPPFLAGS) $(stopwatch_CXXFLAGS) $(CXXFLAGS) -c -o stopwatch-stopwatch.o `test -f 'stopwatch.cpp' || echo '$(srcdir)/'`stopwatch.cpp
+
+stopwatch-stopwatch.obj: stopwatch.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stopwatch_CPPFLAGS) $(CPPFLAGS) $(stopwatch_CXXFLAGS) $(CXXFLAGS) -MT stopwatch-stopwatch.obj -MD -MP -MF $(DEPDIR)/stopwatch-stopwatch.Tpo -c -o stopwatch-stopwatch.obj `if test -f 'stopwatch.cpp'; then $(CYGPATH_W) 'stopwatch.cpp'; else $(CYGPATH_W) '$(srcdir)/stopwatch.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/stopwatch-stopwatch.Tpo $(DEPDIR)/stopwatch-stopwatch.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='stopwatch.cpp' object='stopwatch-stopwatch.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stopwatch_CPPFLAGS) $(CPPFLAGS) $(stopwatch_CXXFLAGS) $(CXXFLAGS) -c -o stopwatch-stopwatch.obj `if test -f 'stopwatch.cpp'; then $(CYGPATH_W) 'stopwatch.cpp'; else $(CYGPATH_W) '$(srcdir)/stopwatch.cpp'; fi`
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -673,7 +696,7 @@ clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
 
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
-		-rm -f ./$(DEPDIR)/stopwatch.Po
+		-rm -f ./$(DEPDIR)/stopwatch-stopwatch.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-tags
@@ -721,7 +744,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
-		-rm -f ./$(DEPDIR)/stopwatch.Po
+		-rm -f ./$(DEPDIR)/stopwatch-stopwatch.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
