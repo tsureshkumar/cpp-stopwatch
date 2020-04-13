@@ -283,9 +283,9 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 stopwatch_SOURCES = stopwatch.cpp
 stopwatch_LDADD = $(CURSES_LIB)
-stopwatch_CFLAGS = -Wc++11-extensions -std=c++17
-stopwatch_CPPFLAGS = -Wc++11-extensions -std=c++17
-stopwatch_CXXFLAGS = -Wc++11-extensions -std=c++17
+stopwatch_CFLAGS = -std=c++17
+stopwatch_CPPFLAGS = -std=c++17
+stopwatch_CXXFLAGS = -std=c++17
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
