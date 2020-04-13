@@ -6,6 +6,9 @@
 #include <curses.h>
 #include <atomic>
 #include <vector>
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#endif // __EMSCRIPTEN__
 
 
 using namespace std;
@@ -182,6 +185,19 @@ void inputhandler(int ch) {
     }
 }
 
+bool iteration(UI *ui) {
+    int ch;
+    if((ch = getch()) != 'q' && ch != 'Q' && ch != 3 && ch != 27) {
+        if(ch != ERR)
+            inputhandler(ch);
+        flushinp();
+        ui->render();
+        refresh();
+        return true;
+    }
+    return false;
+}
+
 int main(int argc, char const* argv[])
 {
     initscr();
@@ -195,22 +211,21 @@ int main(int argc, char const* argv[])
     thread t(stopwatch); // thread updating stopwatch
 
     // main event loop
+#ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop([]() {iteration(ui);}, 20, 1);
+#else
     struct timespec wait, start,cur;
     wait.tv_sec = 0;
     timeout(0);
-    int ch;
-    while((ch = getch()) != 'q' && ch != 'Q' && ch != 3 && ch != 27) {
+    while(true) {
         clock_gettime(CLOCK_REALTIME, &start);
-        if(ch != ERR)
-            inputhandler(ch);
-        flushinp();
-        ui->render();
-        refresh();
+        if(!iteration(ui)) break;
 
         clock_gettime(CLOCK_REALTIME, &cur);
         wait.tv_nsec = start.tv_sec * 1e9L + start.tv_nsec + 1e9L/20 - (cur.tv_sec * 1e9L + cur.tv_nsec);
         nanosleep(&wait, NULL);
     }
+#endif // __EMSCRIPTEN__
     stopWatchStatus = STOPWATCH_STOPPED;
     t.join();
     delete ui;
