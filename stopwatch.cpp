@@ -39,17 +39,19 @@ vector<Lap> laps;
 int width,height; // terminal width, height
 
 class StatusWindow {
-    private: WINDOW *w;
+    private: WINDOW *w; string status;
     public:
-             StatusWindow(int x, int y, int wd, int ht): w(newwin(ht,wd,y,x)) {}
+             StatusWindow(int x, int y, int wd, int ht): w(newwin(ht,wd,y,x)) { box(w,0,0);}
              ~StatusWindow() {if(w) delwin(w);}
-             void resize(int x, int y, int width, int height) {
-                 wresize(w, width, height);
-                 mvwin(w, y, x);
-                 wrefresh(w);
-             }
              void draw(string x) {
-                 mvwprintw(w,0,0, "%s", x.c_str());
+                 status = x;
+             }
+             void render() {
+                 if (stopWatchStatus == STOPWATCH_PAUSED) {
+                     mvwprintw(w,1,1, "=== paused === ");
+                 } else
+                     mvwprintw(w,1,1, "               ");
+                 mvwprintw(w,2,1, "[p/SPC] pause [q/ESC] quit [n] next lap [[/]] page next/prev");
                  wrefresh(w);
              }
              void clear() {
@@ -61,22 +63,22 @@ class StatusWindow {
 class TimerWindow {
     private: WINDOW *w; int wd, ht;
     public:
-             TimerWindow(int x, int y, int wd, int ht): w(newwin(ht,wd,y,x)), ht(ht), wd(wd) {}
+             TimerWindow(int x, int y, int wd, int ht):  ht(ht-2), wd(wd-2), w(newwin(ht,wd,y,x)) {box(w, 0,0);}
              ~TimerWindow() { if (w) delwin(w); }
              int curx() {int i=lap%watchesPerPage(); return i%(ht); }
              int cury() {int i=lap%watchesPerPage(); return i/ht*WATCH_WIDTH; }
              int watchesPerPage() {
-                 int watchCols = wd/WATCH_WIDTH;
-                 return watchCols * ht;
+                 return wd/WATCH_WIDTH * ht;
              }
              int pages() {
                  return laps.size()/watchesPerPage()+1;
              }
              void drawTime(int h, int m, int s, int ms) {
                  if (page !=  pages()-1) return;  // if not last page, don't draw current timer
-                 drawTime(curx(), cury(), h, m, s, ms);
+                 drawTime(curx(), cury()+1, h, m, s, ms);
              }
              void drawTime(int x, int y, int h, int m, int s, int ms) {
+                 box(w,0,0);
                  stringstream ss;
                  ss << setfill('0')  << setw(2) << h << ":";
                  ss << setfill('0')  << setw(2) << m << ":";
@@ -93,12 +95,12 @@ class TimerWindow {
                  for(int i=page*watchesPerPage(); i < laps.size() && i < (page+1)*watchesPerPage(); i++) {
                      Lap &data = laps[i];
                      long ms = data.counter;
-                     int seconds = ms/1000000;
+                     int seconds = ms/1000L;
                      int mins = seconds/60;
                      int hours = mins/60;
                      int x = (i-page*watchesPerPage())%(ht);
                      int y = (i-page*watchesPerPage())/ht*WATCH_WIDTH;
-                     drawTime(x, y, hours, mins%60, seconds%60, ms%1000);
+                     drawTime(x+1, y+1, hours, mins%60, seconds%60, ms%1000);
                  }
              }
 };
@@ -106,10 +108,10 @@ class TimerWindow {
 class PageWindow {
     private: WINDOW *w;
     public:
-             PageWindow(int x, int y, int width, int heitht): w(newwin(height, width, y, x)) {}
+             PageWindow(int x, int y, int wd, int ht): w(newwin(ht, wd, y, x)) {box(w,0,0);}
              ~PageWindow() { if(w) delwin(w); }
-             void update() {
-                 mvwprintw(w, 0,0,"Page %d", page+0);
+             void render() {
+                 mvwprintw(w, 1,1,"Page %d", page+1);
                  wrefresh(w);
              }
 };
@@ -118,41 +120,37 @@ class UI {
     private: StatusWindow *stw; TimerWindow *_timerw; PageWindow *_pagew;
     public:
              UI(int x, int y, int wd, int ht) {
-                stw = new StatusWindow(x,y,10,1);
-                _timerw = new TimerWindow(x,y+1,wd,ht-1);
-                _pagew = new PageWindow(wd-8,y,8,1);
+                stw = new StatusWindow(x,y,wd,4);
+                _timerw = new TimerWindow(x,y+4,wd,ht-7);
+                _pagew = new PageWindow(x,ht-3,wd,3);
              }
              ~UI () {
                  if(stw) delete stw;
                  if(_timerw) delete _timerw;
+                 if(_pagew) delete _pagew;
              }
              StatusWindow *statusw() { return stw; }
              TimerWindow *timerw() { return _timerw; }
              PageWindow *pagew() { return _pagew; }
+             void render() {
+                 this->statusw()->render();
+                this->timerw()->drawPage();
+                this->pagew()->render();
+             }
 };
 
 UI *ui;
 
 int pages; // total number pages
 void recalculateSizes() {
-    getmaxyx(stdscr, height, width);
+    getmaxyx(stdscr, height, width );
 }
 void stopwatch() {
-    //time_t start = time(0);
     laps.emplace_back(chrono::time_point_cast<millis>(sclock::now()));
     const int mills = 100;
     while(stopWatchStatus != STOPWATCH_STOPPED) {
         if (stopWatchStatus == STOPWATCH_RUNNING) {
-            //long seconds = difftime(time(0), start);
-            auto start = laps[lap].start;
             laps[lap].counter += mills;
-            long ms = laps[lap].counter;
-            int seconds = ms/1000;
-            int mins = seconds/60;
-            int hours = mins/60;
-            if(ui) {
-                ui->timerw()->drawTime(hours, mins%60, seconds%60, ms%1000);
-            }
         }
         this_thread::sleep_for(std::chrono::milliseconds(mills));
     }
@@ -163,42 +161,24 @@ void cleanup() {
     endwin();
 }
 
-void inputhandler() {
-    while(true) {
-        int ch = getch();
-        if (ch != ERR) {
-            if (ch == 27 || ch == 3) { 
-                stopWatchStatus = 3;
-                break;
-            } else if(tolower(ch) == 'p' || ch == ' ') {
-                if (stopWatchStatus == STOPWATCH_PAUSED) {
-                    stopWatchStatus = STOPWATCH_RUNNING;
-                    ui->statusw()->clear();
-                } else {
-                    stopWatchStatus = STOPWATCH_PAUSED;
-                    ui->statusw()->draw("==paused==");
-                }
-            } else if (tolower(ch)== 'n') {
-                laps[lap].fin = chrono::time_point_cast<millis>(sclock::now());
-                stopWatchStatus = STOPWATCH_PAUSED;
-                laps.emplace_back(chrono::time_point_cast<millis>(sclock::now()));
-                lap++;
-                if(lap >= ui->timerw()->watchesPerPage()) {
-                    page++;
-                    ui->timerw()->drawPage();
-                }
-                stopWatchStatus = STOPWATCH_RUNNING;
-            } else if (ch == KEY_NPAGE) {
-                page = min(page+1, ui->timerw()->pages()-1);
-                ui->timerw()->drawPage();
-                ui->pagew()->update();
-            } else if (ch == KEY_PPAGE) {
-                page = max(page-1, 0);
-                ui->timerw()->drawPage();
-                ui->pagew()->update();
-            }
+void inputhandler(int ch) {
+    if(tolower(ch) == 'p' || ch == ' ') {
+        if (stopWatchStatus == STOPWATCH_PAUSED) 
+            stopWatchStatus = STOPWATCH_RUNNING;
+        else stopWatchStatus = STOPWATCH_PAUSED;
+    } else if (tolower(ch)== 'n') {
+        laps[lap].fin = chrono::time_point_cast<millis>(sclock::now());
+        stopWatchStatus = STOPWATCH_PAUSED;
+        laps.emplace_back(chrono::time_point_cast<millis>(sclock::now()));
+        lap++;
+        if(lap % ui->timerw()->watchesPerPage() == 0) {
+            page++;
         }
-        //this_thread::sleep_for(std::chrono::milliseconds(100));
+        stopWatchStatus = STOPWATCH_RUNNING;
+    } else if (ch == KEY_NPAGE || ch == ']') {
+        page = min(page+1, ui->timerw()->pages()-1);
+    } else if (ch == KEY_PPAGE || ch == '[') {
+        page = max(page-1, 0);
     }
 }
 
@@ -207,15 +187,32 @@ int main(int argc, char const* argv[])
     initscr();
     //auto scr = newterm(nullptr, stdout, stdin);
     nonl(); cbreak(); noecho(); keypad(stdscr, TRUE);
-    nodelay(stdscr, false);
     clear();
     curs_set(0);
+
     recalculateSizes();
-    ui = new UI(0,0,width, height);
-    thread t(stopwatch);
-    thread keyhandler(inputhandler);
+    ui = new UI(0,0, width, height);
+    thread t(stopwatch); // thread updating stopwatch
+
+    // main event loop
+    struct timespec wait, start,cur;
+    wait.tv_sec = 0;
+    timeout(0);
+    int ch;
+    while((ch = getch()) != 'q' && ch != 'Q' && ch != 3 && ch != 27) {
+        clock_gettime(CLOCK_REALTIME, &start);
+        if(ch != ERR)
+            inputhandler(ch);
+        flushinp();
+        ui->render();
+        refresh();
+
+        clock_gettime(CLOCK_REALTIME, &cur);
+        wait.tv_nsec = start.tv_sec * 1e9L + start.tv_nsec + 1e9L/20 - (cur.tv_sec * 1e9L + cur.tv_nsec);
+        nanosleep(&wait, NULL);
+    }
+    stopWatchStatus = STOPWATCH_STOPPED;
     t.join();
-    keyhandler.join();
     delete ui;
     cleanup();
     //delscreen(scr);
